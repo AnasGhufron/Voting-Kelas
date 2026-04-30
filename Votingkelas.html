@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voting Ketua Kelas + Login</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:linear-gradient(135deg,#4facfe,#00f2fe);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    background:#fff;
+    width:100%;
+    max-width:1000px;
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 15px 35px rgba(0,0,0,.2);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:25px;
+    color:#333;
+}
+
+.login-box{
+    max-width:400px;
+    margin:auto;
+}
+
+input{
+    width:100%;
+    padding:14px;
+    margin-bottom:15px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    color:white;
+    cursor:pointer;
+    background:linear-gradient(135deg,#00c853,#64dd17);
+}
+
+button:hover{
+    opacity:.9;
+}
+
+.info{
+    margin-top:12px;
+    text-align:center;
+    color:#555;
+}
+
+.hidden{
+    display:none;
+}
+
+.candidates{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:#f8f9ff;
+    padding:20px;
+    border-radius:18px;
+    text-align:center;
+    box-shadow:0 10px 20px rgba(0,0,0,.08);
+}
+
+.avatar{
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    margin:auto;
+    margin-bottom:15px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:35px;
+    font-weight:bold;
+    color:white;
+    background:linear-gradient(135deg,#6a11cb,#2575fc);
+}
+
+.vote-btn{
+    margin-top:10px;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.logout{
+    width:auto;
+    padding:10px 18px;
+    background:linear-gradient(135deg,#ff512f,#dd2476);
+}
+
+.results{
+    margin-top:30px;
+}
+
+.bar{
+    width:100%;
+    height:22px;
+    background:#ddd;
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:12px;
+}
+
+.fill{
+    height:100%;
+    width:0%;
+    line-height:22px;
+    text-align:right;
+    padding-right:8px;
+    color:white;
+    font-size:13px;
+    background:linear-gradient(135deg,#ff512f,#dd2476);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- LOGIN -->
+    <div id="loginPage">
+        <h1>🔐 Login Voting Ketua Kelas</h1>
+
+        <div class="login-box">
+            <input type="text" id="username" placeholder="Masukkan Username">
+            <input type="password" id="password" placeholder="Masukkan Password">
+            <button onclick="login()">Login</button>
+            <div class="info">
+                Demo akun:<br>
+                Username: <b>siswa</b><br>
+                Password: <b>12345</b>
+            </div>
+        </div>
+    </div>
+
+    <!-- VOTING -->
+    <div id="votePage" class="hidden">
+
+        <div class="topbar">
+            <h1>🗳️ Voting Ketua Kelas</h1>
+            <button class="logout" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="candidates">
+
+            <div class="card">
+                <div class="avatar">A</div>
+                <h2>Andi</h2>
+                <p>Disiplin & Bertanggung Jawab</p>
+                <button class="vote-btn" onclick="vote(0)">Pilih</button>
+            </div>
+
+            <div class="card">
+                <div class="avatar">B</div>
+                <h2>Budi</h2>
+                <p>Kreatif & Aktif</p>
+                <button class="vote-btn" onclick="vote(1)">Pilih</button>
+            </div>
+
+            <div class="card">
+                <div class="avatar">C</div>
+                <h2>Citra</h2>
+                <p>Tegas & Peduli</p>
+                <button class="vote-btn" onclick="vote(2)">Pilih</button>
+            </div>
+
+        </div>
+
+        <div class="results">
+            <h2>📊 Hasil Voting</h2>
+
+            Andi
+            <div class="bar"><div class="fill" id="bar0">0%</div></div>
+
+            Budi
+            <div class="bar"><div class="fill" id="bar1">0%</div></div>
+
+            Citra
+            <div class="bar"><div class="fill" id="bar2">0%</div></div>
+
+            <div class="info" id="status"></div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+let votes = JSON.parse(localStorage.getItem("votes")) || [0,0,0];
+let votedUsers = JSON.parse(localStorage.getItem("votedUsers")) || {};
+let currentUser = localStorage.getItem("loginUser");
+
+function showPage(){
+    if(currentUser){
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("votePage").classList.remove("hidden");
+        updateResult();
+    }else{
+        document.getElementById("loginPage").classList.remove("hidden");
+        document.getElementById("votePage").classList.add("hidden");
+    }
+}
+
+function login(){
+    let user = document.getElementById("username").value.trim();
+    let pass = document.getElementById("password").value.trim();
+
+    if(user === "siswa" && pass === "12345"){
+        localStorage.setItem("loginUser", user);
+        currentUser = user;
+        showPage();
+    }else{
+        alert("Username atau password salah!");
+    }
+}
+
+function logout(){
+    localStorage.removeItem("loginUser");
+    currentUser = null;
+    showPage();
+}
+
+function vote(index){
+    if(votedUsers[currentUser]){
+        alert("Akun ini sudah memilih!");
+        return;
+    }
+
+    votes[index]++;
+    votedUsers[currentUser] = true;
+
+    localStorage.setItem("votes", JSON.stringify(votes));
+    localStorage.setItem("votedUsers", JSON.stringify(votedUsers));
+
+    updateResult();
+    alert("Voting berhasil!");
+}
+
+function updateResult(){
+    let total = votes.reduce((a,b)=>a+b,0);
+
+    for(let i=0;i<3;i++){
+        let percent = total===0 ? 0 : Math.round((votes[i]/total)*100);
+        let bar = document.getElementById("bar"+i);
+        bar.style.width = percent+"%";
+        bar.innerText = percent+"%";
+    }
+
+    if(votedUsers[currentUser]){
+        document.getElementById("status").innerText = "Kamu sudah melakukan voting.";
+    }else{
+        document.getElementById("status").innerText = "Silakan pilih kandidat.";
+    }
+}
+
+showPage();
+</script>
+
+</body>
+</html>
