@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Voting Ketua Kelas — X PPLG 2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="Voting-Kelas.css"/>
+</head>
+<body>
+
+  <!-- ═══ LOAD SCREEN ═══ -->
+  <div id="loadScreen">
+    <div class="spinner"></div>
+    <div class="load-txt" id="loadTxt">Menghubungkan ke Firebase…</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       LOGIN PAGE
+  ════════════════════════════════════════ -->
+  <div id="loginPage" class="page active">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="icon">🗳️</div>
+        <h2>Voting Ketua Kelas</h2>
+        <div class="kelas-tag">X PPLG 2 · Tahun Ajaran 2025/2026</div>
+        <p>Masuk dengan NIS &amp; password untuk memilih</p>
+      </div>
+
+      <div class="field">
+        <label>NIS (Nomor Induk Siswa)</label>
+        <input type="text" id="iNIS" placeholder="Contoh: 254110629" autocomplete="off"
+               oninput="clearMsgs()" onkeydown="if(event.key==='Enter')document.getElementById('iPass').focus()"/>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="iPass" placeholder="Masukkan password" autocomplete="off"
+                 oninput="clearMsgs()" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <!-- ✅ Show/hide password login -->
+          <button class="pw-toggle" id="pwBtn" type="button" onclick="togglePwField('iPass','pwBtn')">👁️</button>
+        </div>
+      </div>
+
+      <div class="msg-box msg-error" id="msgErr">❌ NIS atau password salah. Periksa kembali.</div>
+      <div class="msg-box msg-warn"  id="msgDbl">⚠️ Akun ini sudah melakukan voting. Tidak dapat memilih lagi.</div>
+
+      <button class="btn-login" onclick="doLogin()">Masuk &amp; Mulai Voting →</button>
+
+      <div class="login-hint">
+        <div class="hint-title">Panduan Login</div>
+        <div class="hint-row">
+          <span>NIS: sesuai data sekolah</span><span class="tag-user">Siswa</span>
+        </div>
+        <div class="hint-row">
+          <span>NIS: sesuai data sekolah</span><span class="tag-kandidat-hint">Kandidat</span>
+        </div>
+        <div class="hint-row" style="margin-top:6px;border-top:1px solid var(--border);padding-top:7px">
+          <span style="color:var(--muted)">Password default:</span>
+          <span style="font-family:monospace;font-size:13px">pplg2025</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       APP PAGE
+  ════════════════════════════════════════ -->
+  <div id="appPage" class="page">
+    <div class="app-wrap">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="user-chip">
+            <div class="u-av" id="uAv">?</div>
+            <div>
+              <div class="u-name" id="uName">—</div>
+              <div class="u-role" id="uRole">—</div>
+            </div>
+          </div>
+          <div>
+            <div class="status-bar" id="statusBar">
+              <div class="status-dot"></div>
+              <span id="statusTxt">Menghubungkan…</span>
+            </div>
+            <div class="last-sync" id="lastSync"></div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn-changepass" onclick="openChangePass()" title="Ganti Password">🔐 Password</button>
+          <button class="btn-logout" onclick="doLogout()">⏻ Keluar</button>
+        </div>
+      </div>
+
+      <!-- Admin Panel -->
+      <div class="admin-panel" id="adminPanel">
+        <div class="admin-title">⚙️ Panel Admin — X PPLG 2</div>
+        <div id="sessionStatus" class="session-status"></div>
+        <div class="admin-btns">
+          <button class="btn-adm btn-session" onclick="openSessionModal()">🕐 Atur Waktu Pemilihan</button>
+          <button class="btn-adm btn-open"    onclick="forceOpenSession()">🟢 Buka Sekarang</button>
+          <button class="btn-adm btn-close"   onclick="forceCloseSession()">🔴 Tutup Sekarang</button>
+          <button class="btn-adm"             onclick="toggleVList()">📋 Daftar Pemilih</button>
+          <button class="btn-adm btn-danger"  onclick="adminReset()">🗑️ Reset Semua Data</button>
+        </div>
+      </div>
+
+      <!-- Kandidat Panel -->
+      <div class="kandidat-panel" id="kandidatPanel">
+        <div class="admin-title">✏️ Panel Kandidat</div>
+        <p style="margin:0 0 10px;color:var(--muted);font-size:13px">
+          Kamu terdaftar sebagai calon ketua kelas. Lengkapi profilmu agar pemilih mengenalmu lebih baik.
+          <br><span style="color:var(--accent3);font-size:12px">✅ Kamu juga dapat memberikan suaramu untuk kandidat lain (atau dirimu sendiri).</span>
+        </p>
+        <button class="btn-adm btn-edit-profil" onclick="openEditProfil()">✏️ Edit Profil &amp; Visi Misi</button>
+      </div>
+
+      <!-- Header -->
+      <header>
+        <div class="badge">X PPLG 2 · 2025/2026</div>
+        <h1>Voting Ketua Kelas 🗳️</h1>
+        <p class="subtitle">Pilih kandidat ketuamu — data real-time &amp; tersimpan di cloud</p>
+      </header>
+
+      <!-- Countdown Bar -->
+      <div class="countdown-bar" id="countdownBar" style="display:none"></div>
+
+      <!-- Voting Closed Info -->
+      <div class="voting-closed-info" id="votingClosedInfo" style="display:none">
+        ⏰ Pemilihan belum dibuka. Silakan tunggu instruksi dari admin.
+      </div>
+
+      <!-- Voted Banner -->
+      <div class="voted-banner" id="votedBanner">
+        <span style="font-size:20px">✅</span>
+        <div>Suaramu sudah tercatat untuk <strong id="votedForName">—</strong>. Terima kasih sudah berpartisipasi!</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-bar">
+        <div class="stat-chip"><div class="val" id="stTotal">0</div><div class="lbl">Total Suara</div></div>
+        <div class="stat-chip"><div class="val">4</div><div class="lbl">Kandidat</div></div>
+        <div class="stat-chip"><div class="val" id="stSudah">0</div><div class="lbl">Sudah Memilih</div></div>
+        <div class="stat-chip"><div class="val" id="stBelum">36</div><div class="lbl">Belum Memilih</div></div>
+      </div>
+
+      <!-- Candidate Cards -->
+      <div class="sec-lbl">Kandidat Ketua Kelas</div>
+      <div class="grid" id="cardGrid"></div>
+
+      <!-- Vote Button -->
+      <div class="actions" id="voteActions">
+        <button class="btn-vote" id="btnVote" disabled onclick="openModal()">✦ Kirim Suaraku</button>
+      </div>
+
+      <!-- Voter List (Admin) -->
+      <div class="voter-list" id="voterList">
+        <div class="vl-head">Daftar Absensi Pemilih <span id="vlSum"></span></div>
+        <div class="vl-grid" id="vlBody"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: KONFIRMASI VOTE ═══ -->
+  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-icon">🗳️</div>
+      <h2>Konfirmasi Pilihanmu</h2>
+      <p>Kamu akan memberikan suara untuk<br>
+        <span class="hl" id="confirmName"></span><br>
+        Suara <strong>tidak dapat diubah</strong> setelah dikirim.
+      </p>
+      <div class="modal-acts">
+        <button class="btn-cancel"  onclick="closeModal()">Batal</button>
+        <button class="btn-confirm" onclick="submitVote()">Ya, Konfirmasi!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: PROFIL KANDIDAT ═══ -->
+  <div class="modal-overlay" id="profilModal" onclick="if(event.target===this)closeProfilModal()">
+    <div class="modal modal-profil">
+      <button class="modal-close" onclick="closeProfilModal()">✕</button>
+      <div class="profil-header">
+        <div class="profil-av" id="profilAv"></div>
+        <div>
+          <div class="profil-nomor" id="profilNomor"></div>
+          <div class="profil-nama"  id="profilNama"></div>
+          <div class="profil-nis"   id="profilNIS"></div>
+        </div>
+      </div>
+      <div class="profil-slogan" id="profilSlogan"></div>
+      <div class="profil-section">
+        <div class="profil-label">🎯 Visi</div>
+        <div class="profil-text"  id="profilVisi"></div>
+      </div>
+      <div class="profil-section">
+        <div class="profil-label">📋 Misi</div>
+        <div class="profil-text"  id="profilMisi"></div>
+      </div>
+      <div class="profil-section">
+        <div class="profil-label">📌 Program Kerja</div>
+        <div class="profil-text"  id="profilProgram"></div>
+      </div>
+      <!-- ✅ Media Sosial section -->
+      <div class="profil-section" id="profilMedsosSection">
+        <div class="profil-label">🌐 Media Sosial</div>
+        <div class="medsos-links" id="profilMedsos"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: EDIT PROFIL (Kandidat) ═══ -->
+  <div class="modal-overlay" id="editProfilModal" onclick="if(event.target===this)closeEditProfil()">
+    <div class="modal modal-edit">
+      <button class="modal-close" onclick="closeEditProfil()">✕</button>
+      <div class="modal-icon">✏️</div>
+      <h2>Edit Profil Kandidat</h2>
+
+      <!-- Foto Upload -->
+      <div class="edit-field">
+        <label>Foto Profil <span style="color:var(--muted);font-size:11px">(maks. 2MB)</span></label>
+        <div class="foto-upload-wrap">
+          <div class="foto-preview" id="fotoPreview"></div>
+          <div class="foto-actions">
+            <label class="btn-foto-upload" for="fotoInput">📷 Pilih Foto</label>
+            <input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="handleFotoUpload(this)"/>
+            <button class="btn-foto-hapus" type="button" onclick="hapusFoto()">🗑️ Hapus</button>
+          </div>
+        </div>
+        <input type="hidden" id="fotoData"/>
+      </div>
+
+      <div class="edit-field">
+        <label>Slogan</label>
+        <input type="text" id="editSlogan" placeholder="Contoh: Bersama Kita Bisa! 💪"/>
+      </div>
+      <div class="edit-field">
+        <label>Visi</label>
+        <textarea id="editVisi" rows="3" placeholder="Tuliskan visimu…"></textarea>
+      </div>
+      <div class="edit-field">
+        <label>Misi <span style="color:var(--muted);font-size:12px">(pisahkan tiap poin dengan baris baru)</span></label>
+        <textarea id="editMisi" rows="5" placeholder="1. …&#10;2. …&#10;3. …"></textarea>
+      </div>
+      <div class="edit-field">
+        <label>Program Kerja</label>
+        <textarea id="editProgram" rows="3" placeholder="Tuliskan program kerjamu…"></textarea>
+      </div>
+
+      <!-- ✅ Media Sosial fields -->
+      <div class="edit-field medsos-group">
+        <label>🌐 Media Sosial</label>
+        <div class="medsos-input-row">
+          <span class="medsos-icon">📸</span>
+          <input type="text" id="editInstagram" placeholder="Instagram (tanpa @, contoh: namaku)"/>
+        </div>
+        <div class="medsos-input-row">
+          <span class="medsos-icon">🎵</span>
+          <input type="text" id="editTiktok" placeholder="TikTok (tanpa @, contoh: namaku)"/>
+        </div>
+        <div class="medsos-input-row">
+          <span class="medsos-icon">🐦</span>
+          <input type="text" id="editTwitter" placeholder="Twitter/X (tanpa @, contoh: namaku)"/>
+        </div>
+        <div class="medsos-input-row">
+          <span class="medsos-icon">▶️</span>
+          <input type="text" id="editYoutube" placeholder="YouTube (nama channel)"/>
+        </div>
+        <div class="medsos-input-row">
+          <span class="medsos-icon">💼</span>
+          <input type="text" id="editLinkedin" placeholder="LinkedIn (username)"/>
+        </div>
+      </div>
+
+      <div class="modal-acts">
+        <button class="btn-cancel"  onclick="closeEditProfil()">Batal</button>
+        <button class="btn-confirm" onclick="saveEditProfil()">💾 Simpan Profil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: ATUR WAKTU PEMILIHAN (Admin) ═══ -->
+  <div class="modal-overlay" id="sessionModal" onclick="if(event.target===this)closeSessionModal()">
+    <div class="modal">
+      <button class="modal-close" onclick="closeSessionModal()">✕</button>
+      <div class="modal-icon">🕐</div>
+      <h2>Atur Waktu Pemilihan</h2>
+      <div class="edit-field">
+        <label>Waktu Mulai</label>
+        <input type="datetime-local" id="sessStart"/>
+      </div>
+      <div class="edit-field">
+        <label>Waktu Selesai</label>
+        <input type="datetime-local" id="sessEnd"/>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:4px 0 12px">
+        Pemilihan akan otomatis terbuka &amp; tertutup sesuai jadwal.
+      </p>
+      <div class="modal-acts">
+        <button class="btn-cancel"  onclick="closeSessionModal()">Batal</button>
+        <button class="btn-confirm" onclick="saveSession()">✅ Simpan Jadwal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: GANTI PASSWORD ═══ -->
+  <div class="modal-overlay" id="changePassModal" onclick="if(event.target===this)closeChangePass()">
+    <div class="modal">
+      <button class="modal-close" onclick="closeChangePass()">✕</button>
+      <div class="modal-icon">🔐</div>
+      <h2>Ganti Password</h2>
+
+      <!-- ✅ Password lama + show/hide -->
+      <div class="edit-field">
+        <label>Password Lama</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpOld" placeholder="Masukkan password lama"/>
+          <button class="pw-toggle" type="button" id="cpOldBtn" onclick="togglePwField('cpOld','cpOldBtn')">👁️</button>
+        </div>
+      </div>
+
+      <!-- ✅ Password baru + show/hide -->
+      <div class="edit-field">
+        <label>Password Baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpNew" placeholder="Minimal 6 karakter"/>
+          <button class="pw-toggle" type="button" id="cpNewBtn" onclick="togglePwField('cpNew','cpNewBtn')">👁️</button>
+        </div>
+      </div>
+
+      <!-- ✅ Konfirmasi password baru + show/hide -->
+      <div class="edit-field">
+        <label>Konfirmasi Password Baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpConfirm" placeholder="Ulangi password baru"/>
+          <button class="pw-toggle" type="button" id="cpConfirmBtn" onclick="togglePwField('cpConfirm','cpConfirmBtn')">👁️</button>
+        </div>
+      </div>
+
+      <div id="cpMsg" class="cp-msg"></div>
+      <div class="modal-acts">
+        <button class="btn-cancel"  onclick="closeChangePass()">Batal</button>
+        <button class="btn-confirm" onclick="submitChangePass()">🔐 Simpan Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>
